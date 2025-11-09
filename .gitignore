@@ -1,9 +1,16 @@
-vue/node_modules
-vue/dist
-release/
-.idea/
+# 🔹 Cosmos / Go build output
+build/
+vendor/
+*.log
+
+# 🔹 Ignite / chain configs
+.ignite/
+config/
+data/
+node_modules/
+.env
+*.swp
+
+# 🔹 IDE / OS
 .vscode/
 .DS_Store
-*.dot
-*.log
-*.ign
