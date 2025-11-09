@@ -1,0 +1,61 @@
+name: Genesis CI (PoA)
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain_id:
+        description: "Chain ID"
+        default: "gz-1"
+        required: true
+      moniker:
+        description: "Node moniker"
+        default: "gorrillazz-genesis"
+        required: true
+
+jobs:
+  build-genesis:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Check out repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Go environment
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      # 3️⃣ Install jq and dependencies
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq make gcc
+
+      # 4️⃣ Build the Gorrillazz binary
+      - name: Build Gorrillazz binary
+        run: |
+          mkdir -p build
+          go mod tidy
+          go build -o build/gorrillazzd ./cmd/gorrillazzd
+          ./build/gorrillazzd version || true
+
+      # 5️⃣ Run Genesis setup script (your script)
+      - name: Run setup-genesis.sh
+        env:
+          BINARY: ./build/gorrillazzd
+          CHAIN_ID: ${{ inputs.chain_id }}
+          MONIKER: ${{ inputs.moniker }}
+          ADMIN_MNEMONIC: ${{ secrets.ADMIN_MNEMONIC }}
+          TREASURY_MNEMONIC: ${{ secrets.TREASURY_MNEMONIC }}
+        run: bash scripts/setup-genesis.sh
+
+      # 6️⃣ Upload the resulting genesis and addresses files
+      - name: Upload genesis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: genesis-${{ inputs.chain_id }}
+          path: artifacts/
+
+      # 7️⃣ (Optional) Validate JSON for explorers or APIs
+      - name: Validate JSON integrity
+        run: jq . artifacts/genesis.json > /dev/null && echo "✅ JSON valid"
